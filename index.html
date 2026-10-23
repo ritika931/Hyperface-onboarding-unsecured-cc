@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Co-branded Card Onboarding</title>
+<meta name="description" content="Interactive mobile prototype of a co-branded credit card onboarding journey, powered by Hyperface.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: dark presentation stage — journey map on the left, a live phone on the right. On phones the app goes full-screen. */
+:root{
+  --ink:#0D0A26; --ink-2:#17133A; --on-ink:#EDEBFF; --on-ink-muted:#9D99C7; --ink-line:#2A2556;
+  --brand:#5B3DF6; --brand-ink:#3B23C7; --brand-soft:#EEEBFF; --brand-glow:rgba(91,61,246,.35);
+  --app:#F6F5FB; --surface:#FFFFFF; --text:#15122E; --muted:#67648A; --line:#E4E1F1;
+  --ok:#0B8F62; --ok-soft:#E2F5EC; --amber:#9A5B00; --amber-soft:#FFF2D9; --danger:#C2334A;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* ---------- stage ---------- */
+.stage{min-height:100%;display:grid;grid-template-columns:minmax(280px,360px) auto;justify-content:center;align-items:center;gap:64px;padding:24px;
+  background:radial-gradient(60% 50% at 70% 40%,var(--brand-glow),transparent 70%),var(--ink)}
+.panel{color:var(--on-ink);max-height:calc(100vh - 48px);overflow-y:auto;padding-right:8px;display:flex;flex-direction:column;gap:20px;scrollbar-width:thin;scrollbar-color:var(--ink-line) transparent}
+.pbrand{display:flex;align-items:center;gap:10px}
+.hf{font-family:var(--f-display);font-weight:800;letter-spacing:-.03em}
+.hf.big{font-size:26px;color:var(--on-ink)}
+.ptag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--on-ink-muted);border:1px solid var(--ink-line);border-radius:99px;padding:3px 9px}
+.ptitle{font-family:var(--f-display);font-size:34px;line-height:1.05;letter-spacing:-.025em;font-weight:700;margin:0;text-wrap:balance}
+.pdesc{color:var(--on-ink-muted);margin:0;font-size:14px}
+#nav{display:flex;flex-direction:column;gap:14px}
+.ng p{margin:0 0 4px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--on-ink-muted)}
+.ng button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;padding:6px 8px;border-radius:8px;color:var(--on-ink);font-size:14px}
+.ng button:hover{background:var(--ink-2)}
+.ng button.on{background:var(--brand);color:#fff}
+.ng button.past{color:var(--on-ink-muted)}
+.ng .n{font-family:var(--f-mono);font-size:11px;width:20px;opacity:.7;font-variant-numeric:tabular-nums}
+.note{border:1px solid var(--ink-line);border-radius:12px;padding:14px 16px;background:var(--ink-2)}
+.note .nk{margin:0 0 4px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#B9A9FF}
+.note #note{margin:0;font-size:14px;color:var(--on-ink)}
+.ghost{align-self:flex-start;background:none;border:1px solid var(--ink-line);color:var(--on-ink);border-radius:99px;padding:8px 16px;font-size:13px}
+.ghost:hover{border-color:var(--on-ink-muted)}
+
+/* ---------- phone ---------- */
+.phone{position:relative;width:390px;height:min(844px,calc(100vh - 48px));border-radius:50px;background:var(--app);overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 0 0 11px #05040F,0 0 0 12px #2D2860,0 50px 100px -30px rgba(0,0,0,.7)}
+.status{flex:none;height:46px;display:flex;justify-content:space-between;align-items:center;padding:4px 30px 0;background:var(--surface);font-weight:600;font-size:14px;color:var(--text)}
+.status .sig{display:flex;gap:5px;align-items:center}
+.status .sig i{display:block;background:var(--text);border-radius:2px}
+#app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+@media (max-width:900px){.panel{display:none}.stage{grid-template-columns:auto}}
+@media (max-width:520px){
+  .stage{display:block;padding:0;height:100%;background:var(--app)}
+  .device{height:100%}
+  .phone{width:100%;height:100%;border-radius:0;box-shadow:none}
+  .status{display:none}
+}
+
+/* ---------- screen scaffolding ---------- */
+.scr{flex:1;min-height:0;display:flex;flex-direction:column;animation:in .28s ease both}
+@keyframes in{from{opacity:.4;transform:translateX(14px)}to{opacity:1;transform:none}}
+.bar{flex:none;background:var(--surface);padding:6px 16px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.brow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.iconbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.bbrand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--text);color:#fff;display:grid;place-items:center;font-family:var(--f-display);font-size:11px;font-weight:800;letter-spacing:.02em}
+.secure{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ok);font-weight:600}
+.prog{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.prog i{height:4px;border-radius:4px;background:var(--line)}
+.prog i.done{background:var(--brand)}
+.prog i.on{background:linear-gradient(90deg,var(--brand) 50%,var(--line) 50%)}
+.body{flex:1;min-height:0;overflow-y:auto;padding:22px 20px 28px;display:flex;flex-direction:column;gap:18px}
+.foot{flex:none;padding:12px 20px 18px;background:var(--surface);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+@media (max-width:520px){.foot{padding-bottom:max(18px,env(safe-area-inset-bottom,0px))}}
+
+.eyebrow{margin:0;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--brand)}
+h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.02em;text-wrap:balance;color:var(--text)}
+h1{font-size:36px;line-height:1.02;font-weight:800}
+h2{font-size:26px;line-height:1.1;font-weight:700;margin-top:-10px}
+h3{font-size:17px;font-weight:700}
+.lead{margin:-8px 0 0;color:var(--muted)}
+.fine{margin:0;font-size:12px;color:var(--muted)}
+.fine.c{text-align:center}
+.hint{margin:0;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.link{background:none;border:0;padding:0;color:var(--brand);font-weight:600}
+
+/* ---------- controls ---------- */
+.btn{width:100%;height:52px;border:0;border-radius:14px;background:var(--brand);color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s,transform .1s}
+.btn:hover{background:var(--brand-ink)}
+.btn:active{transform:scale(.99)}
+.btn:disabled{background:#C9C4E6;cursor:not-allowed}
+.btn.sec{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld>span{font-size:13px;font-weight:600;color:var(--muted)}
+.inp{display:flex;align-items:center;gap:8px;height:52px;padding:0 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);transition:border-color .15s}
+.inp:focus-within{border-color:var(--brand)}
+.inp b{font-weight:600;color:var(--muted);padding-right:8px;border-right:1px solid var(--line)}
+.inp input,.inp select{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:16px;font-weight:600;color:var(--text);height:100%}
+.inp.locked{background:var(--app)}
+.inp .suf{font-size:12px;color:var(--ok);font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.inp .sbtn{border:0;background:var(--brand-soft);color:var(--brand-ink);font-weight:700;font-size:13px;border-radius:8px;padding:7px 12px}
+.fld small{font-size:12px;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 14px;font-size:14px;font-weight:600}
+.chip.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-ink)}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted)}
+.chk input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--brand);flex:none}
+.chk u{color:var(--brand);text-decoration:none;font-weight:600}
+.consents{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.otp{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.otp input{width:100%;height:56px;text-align:center;font-family:var(--f-mono);font-size:22px;font-weight:600;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);outline:0}
+.otp input:focus{border-color:var(--brand)}
+.otp input.f{border-color:var(--brand);background:var(--brand-soft);animation:pop .2s ease}
+@keyframes pop{50%{transform:scale(1.08)}}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.kv{display:flex;flex-direction:column}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.kv div:last-child{border-bottom:0}
+.kv span{color:var(--muted)}
+.kv b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.vcard{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--ok-soft);border:1px solid #BFE6D3;animation:in .3s ease both}
+.vcard .vi{width:36px;height:36px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;flex:none}
+.vcard p{margin:0}
+.vcard .k{font-size:12px;color:var(--muted)}
+.vcard .v{font-weight:700;letter-spacing:.01em}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:6px;background:var(--ok-soft);color:var(--ok)}
+.badge.b{background:var(--brand-soft);color:var(--brand-ink)}
+.badge.a{background:var(--amber-soft);color:var(--amber)}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);width:100%}
+.opt.on{border-color:var(--brand);background:#FAF9FF}
+.opt .oi{width:40px;height:40px;border-radius:10px;background:var(--app);display:grid;place-items:center;flex:none;color:var(--brand-ink)}
+.opt .ot{flex:1;min-width:0}
+.opt .ot b{display:block;font-size:15px}
+.opt .ot span{font-size:13px;color:var(--muted)}
+.opt .rd{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none}
+.opt.on .rd{border:6px solid var(--brand)}
+
+/* ---------- landing ---------- */
+.landing{gap:20px;background:linear-gradient(180deg,var(--brand-soft) 0,var(--app) 380px)}
+.lhead{display:flex;justify-content:space-between;align-items:center}
+.tag{font-size:12px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
+.lcard{position:relative;border-radius:20px;padding:20px;color:#fff;overflow:hidden;background:linear-gradient(135deg,#1B1450 0%,var(--brand) 100%);box-shadow:0 18px 40px -18px var(--brand)}
+.lcard::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;border:28px solid rgba(255,255,255,.07)}
+.lcard p{margin:0}
+.lc-top{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px;margin-bottom:18px}
+.lc-chip{width:34px;height:24px;border-radius:5px;background:linear-gradient(135deg,#F6D88A,#C9A24A)}
+.lc-k{font-size:12px;opacity:.75}
+.lc-v{font-family:var(--f-display);font-size:34px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.lc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18)}
+.lc-s{font-weight:700;font-size:14px}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ben{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.ben .bi{width:34px;height:34px;border-radius:10px;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center}
+.ben b{font-size:14px;line-height:1.2}
+.ben span{font-size:12px;color:var(--muted)}
+.how{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;counter-reset:s}
+.how li{position:relative;padding:0 0 18px 44px;counter-increment:s;display:flex;flex-direction:column}
+.how li::before{content:counter(s);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--text);color:#fff;display:grid;place-items:center;font-family:var(--f-mono);font-size:13px;font-weight:600}
+.how li:not(:last-child)::after{content:"";position:absolute;left:14.5px;top:32px;bottom:2px;width:1px;background:var(--line)}
+.how span{font-size:13px;color:var(--muted)}
+.dchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.dchips span{font-size:12px;padding:5px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
+.disc{margin:0;font-size:11px;color:var(--muted);line-height:1.5}
+.powered{margin:0;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px}
+.powered .hf{font-size:15px;color:var(--text)}
+
+/* ---------- loaders & special ---------- */
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center}
+.ring{width:84px;height:84px;border-radius:50%;border:6px solid var(--brand-soft);border-top-color:var(--brand);animation:sp 1s linear infinite}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;text-align:left;width:100%;max-width:280px}
+.steps li{display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:500}
+.steps li i{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;color:#fff}
+.steps li.done{color:var(--text)}
+.steps li.done i{background:var(--ok);border-color:var(--ok)}
+.offer-hero{text-align:center;padding:22px 16px;border-radius:20px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;overflow:hidden}
+.offer-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 60% at 50% 0%,var(--brand-soft),transparent 70%)}
+.offer-hero>*{position:relative;margin:0}
+.big{font-family:var(--f-display);font-size:46px;font-weight:800;letter-spacing:-.03em;color:var(--text);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--brand)}
+.rlab{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+.vf{position:relative;width:220px;height:220px;margin:4px auto 0;border-radius:50%;background:#E9E6F7;overflow:hidden;display:grid;place-items:end center}
+.vf svg{width:170px;height:190px;color:#C2BCE3}
+.vf::after{content:"";position:absolute;inset:0;border-radius:50%;border:4px dashed var(--brand);opacity:.6}
+.vf.scan::after{border-style:solid;opacity:1;animation:sp 1.2s linear infinite;border-color:var(--brand) transparent var(--brand) transparent}
+.vf.scan .beam{position:absolute;left:0;right:0;height:3px;background:var(--brand);box-shadow:0 0 18px var(--brand);animation:beam 1.2s ease-in-out infinite alternate;top:10%}
+@keyframes beam{to{top:88%}}
+.vf.ok::after{border:4px solid var(--ok);opacity:1}
+.tips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tips div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 8px;font-size:12px;text-align:center;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:6px}
+.tips div i{color:var(--brand-ink)}
+.aad{display:flex;gap:14px;align-items:flex-start}
+.aad .ph{width:64px;height:76px;border-radius:10px;background:#E9E6F7;display:grid;place-items:end center;overflow:hidden;flex:none}
+.aad .ph svg{width:56px;height:62px;color:#BDB6E0}
+.aad .kv{flex:1;min-width:0}
+.aad .kv div{padding:6px 0;font-size:13px}
+.docrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left}
+.docrow:last-child{border-bottom:0}
+.docrow span{flex:1;font-weight:600;font-size:14px}
+.docrow em{font-style:normal;color:var(--brand);font-size:13px;font-weight:600}
+.done-badge{width:88px;height:88px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;box-shadow:0 0 0 12px var(--ok-soft);animation:pop .5s ease}
+.next{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.next li{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.next li i{color:var(--ok);flex:none;margin-top:1px}
+
+/* ---------- sheet & toast ---------- */
+.scrim{position:absolute;inset:0;background:rgba(13,10,38,.45);display:flex;align-items:flex-end;z-index:20;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}}
+.sheet{width:100%;background:var(--surface);border-radius:24px 24px 0 0;padding:10px 20px 22px;display:flex;flex-direction:column;gap:16px;animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}}
+.grab{width:40px;height:4px;border-radius:4px;background:var(--line);align-self:center}
+.sheet h3{font-size:20px}
+.sheet p{margin:0}
+.timer{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;background:var(--app)}
+.timer .ring{width:40px;height:40px;border-width:4px}
+#toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--text);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;z-index:30;transition:.25s;pointer-events:none;width:max-content;max-width:86%;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+
+/* ---------- fixes + co-branded card ---------- */
+.body>*,.center>*{flex-shrink:0}
+.cc{position:relative;width:100%;max-width:100%;aspect-ratio:1.586;border-radius:18px;padding:18px 20px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;
+  background:radial-gradient(120% 90% at 100% 0%,#7B62FF 0%,transparent 55%),linear-gradient(135deg,#120D3A 0%,#2A1A8C 55%,var(--brand) 100%);box-shadow:0 22px 40px -20px rgba(59,35,199,.8)}
+.cc::before{content:"";position:absolute;right:-30%;bottom:-60%;width:90%;aspect-ratio:1;border-radius:50%;border:34px solid rgba(255,255,255,.06)}
+.cc>*{position:relative}
+.cc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.cc-co{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px}
+.cc-co .x{opacity:.55;font-weight:400}
+.cc-co .mk{width:24px;height:24px;border-radius:7px;background:#fff;color:var(--ink);display:grid;place-items:center;font-family:var(--f-display);font-size:10px;font-weight:800}
+.cc-var{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;text-align:right}
+.cc-mid{display:flex;align-items:center;gap:12px}
+.cc-chip{width:40px;height:30px;border-radius:6px;background:linear-gradient(135deg,#F3D98B,#B88E3A);position:relative}
+.cc-chip::after{content:"";position:absolute;inset:8px 0;border-top:1px solid rgba(0,0,0,.25);border-bottom:1px solid rgba(0,0,0,.25)}
+.cc-nfc{opacity:.8;display:flex}
+.cc-num{font-family:var(--f-mono);font-size:15px;letter-spacing:.12em}
+.cc-bot{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+.cc-name{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-k{font-size:9px;opacity:.65;letter-spacing:.1em;text-transform:uppercase;display:block}
+.cc-net{font-family:var(--f-display);font-weight:800;font-style:italic;font-size:20px;letter-spacing:-.01em;flex:none}
+.hl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hl div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+.hl b{font-family:var(--f-display);font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--brand-ink)}
+.hl span{font-size:11px;color:var(--muted);line-height:1.3}
+.blist{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:2px 14px}
+.bl{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.bl:last-child{border-bottom:0}
+.bl .bi{width:36px;height:36px;border-radius:10px;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;flex:none}
+.bl b{display:block;font-size:14px}
+.bl span{font-size:13px;color:var(--muted)}
+.calc label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.calc label span{display:flex;justify-content:space-between}
+.calc label em{font-style:normal;color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.calc .out{display:flex;align-items:baseline;justify-content:space-between;padding-top:12px;border-top:1px dashed var(--line)}
+.calc .out b{font-family:var(--f-display);font-size:28px;font-weight:800;color:var(--ok);font-variant-numeric:tabular-nums}
+.elig{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.elig div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.elig b{display:block;font-size:14px}
+.elig span{color:var(--muted);font-size:12px}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.acts button{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:600;text-align:center;line-height:1.2}
+.acts button i{width:36px;height:36px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center}
+.track{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.track li{position:relative;padding:0 0 14px 28px;font-size:14px;font-weight:600}
+.track li:last-child{padding-bottom:0}
+.track li::before{content:"";position:absolute;left:4px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--line);background:var(--surface);box-sizing:border-box}
+.track li.d::before{background:var(--ok);border-color:var(--ok)}
+.track li:not(:last-child)::after{content:"";position:absolute;left:9.5px;top:18px;bottom:0;width:1px;background:var(--line)}
+.track span{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.namelen{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.panel .ptitle{color:var(--on-ink)}
+:root{--iss:#0E4C5A;--iss-soft:#E3F1F2}
+.redir{position:absolute;inset:0;z-index:25;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;animation:fade .2s ease}
+.redir .hosts{display:flex;align-items:center;gap:12px}
+.redir .mark{width:44px;height:44px;border-radius:12px;font-size:14px}
+.redir .dots{display:flex;gap:5px}
+.redir .dots i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.redir .dots i:nth-child(2){animation-delay:.2s}.redir .dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{50%{opacity:.2}}
+.mark.imark{background:var(--iss)}
+.mark.inv{background:#fff;color:var(--iss)}
+.iss{background:var(--surface)}
+.ichrome{flex:none;display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EFEFF3;border-bottom:1px solid var(--line)}
+.iconbtn.sm{width:30px;height:30px;border-radius:8px}
+.url{flex:1;min-width:0;display:flex;align-items:center;gap:6px;justify-content:center;background:var(--surface);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--text);font-family:var(--f-mono)}
+.url svg{color:var(--ok)}
+.ihead{flex:none;display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--iss);color:#fff}
+.ihead b{display:block;font-size:15px}
+.ihead span{font-size:12px;opacity:.75}
+.ibody{flex:1;min-height:0;overflow-y:auto;padding:22px 20px 28px}
+.istep{margin:0;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--iss)}
+.iss .chip.on{border-color:var(--iss);background:var(--iss-soft);color:var(--iss)}
+.iss .inp:focus-within,.iss .otp input:focus,.iss .otp input.f{border-color:var(--iss)}
+.iss .otp input.f{background:var(--iss-soft)}
+.iss .chk input{accent-color:var(--iss)}
+.btn.ibtn{background:var(--iss)}
+.btn.ibtn:hover{background:#0A3A45}
+.slots{display:grid;grid-template-columns:repeat(3,1fr)}
+.slots .chip{text-align:center;padding:9px 4px;font-variant-numeric:tabular-nums}
+.chip:disabled{opacity:.45;text-decoration:line-through;cursor:not-allowed}
+.tg{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.tg:last-child{border-bottom:0}
+.tg span{flex:1;min-width:0}.tg b{display:block;font-size:14px}.tg small{font-size:12px;color:var(--muted)}
+.tg input{position:absolute;opacity:0;width:1px;height:1px}
+.tg i{width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.tg i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.tg input:checked+i{background:var(--brand)}
+.tg input:checked+i::after{transform:translateX(18px)}
+.tg input:disabled+i{opacity:.55}
+.tg input:focus-visible+i{outline:2px solid var(--brand);outline-offset:2px}
+.jlink{color:#B9A9FF;font-size:14px;font-weight:600;text-decoration:none}
+.jlink:hover{text-decoration:underline}
+.prog{display:flex}.prog i{flex:1}
+/* single-column stage: phone only, full-screen on phones */
+.stage{grid-template-columns:auto}
+.phone{height:min(844px,calc(100vh - 48px));height:min(844px,calc(100dvh - 48px))}
+@media (max-width:520px){.phone{height:100%}.stage,.device{min-height:100%;min-height:100dvh}}
+html,body{margin:0}
+</style>
+<style>@media (max-width:520px){.phone{padding-top:env(safe-area-inset-top,0px)}}</style>
+</head>
+<body>
+
+
+<div class="stage">
+  <main class="device">
+    <div class="phone" id="phone">
+      <div class="status" aria-hidden="true"><span>9:41</span><span class="sig"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:3px;height:11px"></i><i style="width:22px;height:11px;border-radius:3px;margin-left:4px"></i></span></div>
+      <div id="app"></div>
+      <div id="toast" role="status" aria-live="polite"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ===== Configure per client ===== */
+const CFG = {
+  brand: 'YourBrand',        // co-brand partner
+  initials: 'YB',
+  issuer: 'Partner Bank',    // card-issuing bank
+  issuerInitials: 'PB',
+  issuerHost: 'kyc.partnerbank.in', // issuer-hosted KYC pages (redirect via issuer API)
+  variant: 'Signature',      // card variant printed on the card
+  maxLimit: 500000,
+  offer: 150000,
+  brandCashback: 5,          // % back on partner spends
+  otherCashback: 1,          // % back everywhere else
+  welcome: 500,              // welcome voucher, ₹
+  fee: 500,                  // joining & annual fee, ₹ (+GST)
+  feeWaiver: 200000,         // annual spend for fee waiver, ₹
+  signedLabel: 'Sanction letter and KFS',
+};
+
+const D = { mobile:'98765 43210', pan:'ABCPS1234K', dob:'14/08/1992', name:'Rahul Sharma', email:'rahul.sharma@gmail.com',
+  gender:'Male', res:'Rented', pincode:'560038', address:'12, 4th Cross, Indiranagar', emp:'Salaried', company:'Infosys Ltd.',
+  income:'85,000', limit:CFG.offer, kycm:'aadhaar', acct:'50100234567890', ifsc:'HDFC0000123',
+  cardName:'RAHUL SHARMA', stmt:'5th', deliver:'Home',
+  aadType:'Aadhaar number', vmode:'schedule', vday:'', vslot:'11:30 AM', vlang:'English' };
+
+const FLOW = [
+  {id:'landing', label:'Landing & benefits', g:'Discover', note:'A configurable landing page: co-brand benefits, a savings calculator, eligibility and fees. Copy and offers are set per program without code changes.'},
+  {id:'mobile', label:'Mobile number', g:'Sign up', note:'Consent for the bureau pull and for communication is captured with a timestamp before any data is fetched.'},
+  {id:'otp', label:'OTP verification', g:'Sign up', note:'SMS OTP with auto-read on Android. The verified mobile number identifies the customer for the rest of the journey and for drop-off nudges.'},
+  {id:'pan', label:'PAN verification', g:'Profile', note:'PAN is validated in real time. The name and date of birth returned pre-fill later screens.'},
+  {id:'personal', label:'Personal details', g:'Profile', note:'Only the fields the issuer policy needs. Pincode lookup fills city and state and checks serviceability.'},
+  {id:'income', label:'Work & income', g:'Profile', note:'Employer search and declared income. Account Aggregator can verify income instantly, which helps thin-file customers get a higher limit.'},
+  {id:'kyc', label:'KYC overview', g:'KYC', note:'KYC runs before the credit decision, so the limit is assigned only to a verified customer. Sets expectations and tells the customer they are moving to the issuer’s secure pages.'},
+  {id:'ekyc', label:'Aadhaar eKYC (issuer)', g:'KYC', note:'Redirect to the issuer’s hosted eKYC page via the issuer API. Aadhaar OTP is verified with UIDAI and only the result comes back to the journey.'},
+  {id:'vkyc', label:'Video KYC & scheduling', g:'KYC', note:'Start video KYC now or book a slot, day and language, through the issuer’s VKYC platform. The officer’s live check covers face match and liveness, so no separate selfie step is needed.'},
+  {id:'fetching', label:'Eligibility check', g:'Offer', note:'With KYC complete, the bureau pull, policy rules and limit assignment run in the decision engine, typically in a few seconds.'},
+  {id:'offer', label:'Card offer', g:'Offer', note:'Approved limit and fees from the issuer policy. Customers can choose a lower limit, as RBI card directions require.'},
+  {id:'personalise', label:'Personalise card', g:'Offer', note:'Name on card with a live preview, statement date and delivery address.'},
+  {id:'kfs', label:'Sanction letter & KFS', g:'Sign & activate', note:'Sanction letter and Key Fact Statement shown before signing, with MITC linked. All are e-signed together with Aadhaar OTP.'},
+  {id:'activate', label:'Card activation', g:'Sign & activate', note:'OTP-based activation. Only in-store use in India is on by default; the customer turns on online, contactless and international use.'},
+];
+const STAGES = ['Sign up','Profile','KYC','Offer','Sign & activate'];
+
+/* ===== helpers ===== */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const lakh = n => n>=100000 ? '₹'+(n/100000).toLocaleString('en-IN')+' lakh' : fmt(n);
+let cur = 'landing', runId = 0;
+const later = (ms, fn) => { const r = runId; setTimeout(() => { if (r === runId) fn(); }, ms); };
+const P = {
+  back:'<path d="M15 18l-6-6 6-6"/>', check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  shield:'<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  cart:'<path d="M3 4h2l2.4 11h10.2L20 7H6.2"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/>',
+  doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  bank:'<path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+  id:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2.5"/><path d="M14 10h4M14 14h4"/>',
+  video:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  phone:'<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
+  card:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+  glasses:'<circle cx="7" cy="14" r="3"/><circle cx="17" cy="14" r="3"/><path d="M10 14h4M4 14l1-6M20 14l-1-6"/>',
+  face:'<circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M9 15c1.5 1.3 4.5 1.3 6 0"/>',
+  nfc:'<path d="M8.5 8.5a5 5 0 0 1 0 7M12 6a8.5 8.5 0 0 1 0 12M15.5 3.5a12 12 0 0 1 0 17"/>',
+  gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8C10.5 5 7 5 7 7s3 1 5 1zM12 8c1.5-3 5-3 5-1s-3 1-5 1z"/>',
+  fuel:'<path d="M4 20V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v15M3 20h12M6 8h6M14 9h2l2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>',
+  lounge:'<path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M2 13a2 2 0 0 1 4 0v2h12v-2a2 2 0 0 1 4 0v5H2zM5 18v2M19 18v2"/>',
+  pct:'<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
+  key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>',
+  wallet:'<path d="M3 7a2 2 0 0 1 2-2h13v4"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 13.5h2"/>',
+  sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  case:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+};
+const ic = (n, s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+const person = `<svg viewBox="0 0 100 110" aria-hidden="true"><circle cx="50" cy="38" r="24" fill="currentColor"/><path d="M6 110c4-26 22-40 44-40s40 14 44 40z" fill="currentColor"/></svg>`;
+const ccard = (o = {}) => `<div class="cc" role="img" aria-label="${CFG.brand} ${CFG.issuer} credit card"><div class="cc-top"><div class="cc-co"><span class="mk">${CFG.initials}</span>${CFG.brand}<span class="x">×</span>${CFG.issuer}</div><span class="cc-var">${CFG.variant}</span></div>
+  <div class="cc-mid"><span class="cc-chip"></span><span class="cc-nfc">${ic('nfc',22)}</span></div>
+  <div class="cc-num" ${o.numId?`id="${o.numId}"`:''}>${o.num||'•••• •••• •••• ••••'}</div>
+  <div class="cc-bot"><div style="min-width:0"><span class="cc-k">${o.k||'Card holder'}</span><div class="cc-name" ${o.nameId?`id="${o.nameId}"`:''}>${o.name||'Your name'}</div></div></div></div>`;
+
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+function load(btn, txt){ btn.disabled=true; btn.innerHTML=`<span class="spin"></span>${txt}`; }
+function unload(btn, txt){ btn.disabled=false; btn.textContent=txt; }
+
+const field = (id, label, val, o = {}) => `<label class="fld" for="${id}"><span>${label}</span><div class="inp${o.locked?' locked':''}">${o.pre?`<b>${o.pre}</b>`:''}<input id="${id}" value="${val}" ${o.k?`data-k="${o.k}"`:''} ${o.locked?'readonly':''} ${o.mode?`inputmode="${o.mode}"`:''} ${o.max?`maxlength="${o.max}"`:''} ${o.up?'style="text-transform:uppercase"':''} autocomplete="off">${o.suf||''}</div>${o.hint?`<small>${o.hint}</small>`:''}</label>`;
+const chips = (key, list) => `<div class="chips" data-key="${key}">${list.map(v=>`<button type="button" class="chip${D[key]===v?' on':''}" data-val="${v}">${v}</button>`).join('')}</div>`;
+const opt = (group, val, icon, title, sub, badge) => `<button type="button" class="opt${D[group]===val?' on':''}" data-opt="${group}" data-val="${val}"><span class="oi">${ic(icon)}</span><span class="ot"><b>${title} ${badge?`<span class="badge b">${badge}</span>`:''}</b><span>${sub}</span></span><span class="rd"></span></button>`;
+const otpBoxes = id => `<div class="otp" id="${id}">${[0,1,2,3,4,5].map(i=>`<input id="${id}-${i}" inputmode="numeric" maxlength="1" aria-label="Digit ${i+1}">`).join('')}</div>`;
+function wireOtp(id, onFull){
+  const ins=[...document.querySelectorAll(`#${id} input`)];
+  const chk=()=>{ if(ins.every(x=>x.value)) onFull(); };
+  ins.forEach((el,i)=>{
+    el.addEventListener('input',()=>{ el.value=el.value.replace(/\D/g,'').slice(-1); if(el.value&&ins[i+1]) ins[i+1].focus(); chk(); });
+    el.addEventListener('keydown',e=>{ if(e.key==='Backspace'&&!el.value&&ins[i-1]) ins[i-1].focus(); });
+  });
+  return { fill(code, cb){ code.split('').forEach((c,i)=>later(110*i,()=>{ ins[i].value=c; ins[i].classList.add('f'); if(i===5){ chk(); cb&&cb(); } })); } };
+}
+function countdown(sel, s){
+  const el=$(sel); const tick=()=>{ if(!document.body.contains(el)) return;
+    if(s<=0){ el.innerHTML='<button class="link" type="button" id="resend">Resend OTP</button>'; $('#resend').onclick=()=>toast('A new OTP has been sent'); return; }
+    el.textContent=`Resend in 0:${String(s).padStart(2,'0')}`; s--; later(1000,tick); };
+  tick();
+}
+const vcard = (k, v, badge='Verified') => `<div class="vcard"><span class="vi">${ic('check',18)}</span><div style="flex:1;min-width:0"><p class="k">${k}</p><p class="v">${v}</p></div><span class="badge">${badge}</span></div>`;
+
+function showSheet(html){ hideSheet(); const s=document.createElement('div'); s.className='scrim'; s.id='scrim'; s.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><span class="grab"></span>${html}</div>`; s.addEventListener('click',e=>{ if(e.target===s) hideSheet(); }); app.appendChild(s); }
+function hideSheet(){ $('#scrim')?.remove(); }
+
+const stageIdx = id => STAGES.indexOf(FLOW.find(x=>x.id===id).g);
+const bar = id => { const si=stageIdx(id); return `<div class="bar"><div class="brow"><button class="iconbtn" type="button" data-back aria-label="Go back">${ic('back')}</button><div class="bbrand"><span class="mark">${CFG.initials}</span>${CFG.brand}</div><span class="secure">${ic('lock',14)}Secure</span></div><div class="prog" aria-label="Step ${si+1} of ${STAGES.length}">${STAGES.map((s,i)=>`<i class="${i<si?'done':i===si?'on':''}"></i>`).join('')}</div></div>`; };
+const head = (id, t, l) => `<p class="eyebrow">Step ${stageIdx(id)+1} of ${STAGES.length} · ${FLOW.find(x=>x.id===id).g}</p><h2>${t}</h2>${l?`<p class="lead">${l}</p>`:''}`;
+const scr = (id, body, foot) => `<div class="scr">${bar(id)}<div class="body">${body}</div>${foot?`<div class="foot">${foot}</div>`:''}</div>`;
+const plus = d => new Date(Date.now()+d*864e5).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+
+/* ===== screens ===== */
+const V = {}, M = {};
+
+V.landing = () => `<div class="scr"><div class="body landing">
+  <div class="lhead"><div class="bbrand"><span class="mark">${CFG.initials}</span>${CFG.brand}</div><span class="tag">with ${CFG.issuer}</span></div>
+  <div style="display:flex;flex-direction:column;gap:10px"><p class="eyebrow">${CFG.brand} Credit Card</p>
+  <h1>${CFG.brandCashback}% back on every ${CFG.brand} order.</h1>
+  <p class="lead" style="margin:0">Plus ${CFG.otherCashback}% back everywhere else. Apply in 5 minutes and start using your virtual card today.</p></div>
+  ${ccard({name:'Rahul Sharma'})}
+  <div class="hl"><div><b>${CFG.brandCashback}%</b><span>cashback on ${CFG.brand}</span></div><div><b>${fmt(CFG.welcome)}</b><span>welcome voucher</span></div><div><b>₹0</b><span>annual fee on ${lakh(CFG.feeWaiver)} spend</span></div></div>
+  <h3>What you get</h3>
+  <div class="blist">
+    <div class="bl"><span class="bi">${ic('cart',18)}</span><div><b>${CFG.brandCashback}% cashback on ${CFG.brand}</b><span>Credited to your statement automatically. No points to redeem.</span></div></div>
+    <div class="bl"><span class="bi">${ic('pct',18)}</span><div><b>${CFG.otherCashback}% cashback on all other spends</b><span>Groceries, bills, travel, dining and online shopping.</span></div></div>
+    <div class="bl"><span class="bi">${ic('gift',18)}</span><div><b>${fmt(CFG.welcome)} ${CFG.brand} voucher</b><span>On your first transaction within 30 days of getting the card.</span></div></div>
+    <div class="bl"><span class="bi">${ic('nfc',18)}</span><div><b>Tap to pay</b><span>Contactless payments up to ₹5,000 without entering a PIN.</span></div></div>
+    <div class="bl"><span class="bi">${ic('card',18)}</span><div><b>No-cost EMI on big purchases</b><span>Convert purchases above ₹2,500 into 3–12 month EMIs in the app.</span></div></div>
+    <div class="bl"><span class="bi">${ic('fuel',18)}</span><div><b>1% fuel surcharge waiver</b><span>At any petrol pump, on bills from ₹400 to ₹4,000.</span></div></div>
+    <div class="bl"><span class="bi">${ic('lounge',18)}</span><div><b>4 airport lounge visits a year</b><span>At domestic airports, one per quarter.</span></div></div>
+    <div class="bl"><span class="bi">${ic('sliders',18)}</span><div><b>Full control in the app</b><span>Set limits, block, or switch off online and international use anytime.</span></div></div>
+  </div>
+  <div class="card calc"><b>How much could you save?</b>
+    <label for="cb1"><span>Spends on ${CFG.brand} each month <em id="cv1">₹8,000</em></span><input type="range" id="cb1" min="0" max="30000" step="1000" value="8000"></label>
+    <label for="cb2"><span>Other spends each month <em id="cv2">₹25,000</em></span><input type="range" id="cb2" min="0" max="100000" step="5000" value="25000"></label>
+    <div class="out"><span class="fine">Cashback in a year</span><b id="cout">₹7,800</b></div>
+    <p class="fine">Illustrative. Monthly cashback caps and exclusions such as rent, fuel and wallet loads apply.</p></div>
+  <h3>Who can apply</h3>
+  <div class="elig"><div><b>21–60 years</b><span>Age</span></div><div><b>₹25,000+</b><span>Monthly income</span></div><div><b>Indian resident</b><span>With PAN & Aadhaar</span></div><div><b>Salaried or self-employed</b><span>Employment</span></div></div>
+  <h3>How it works</h3>
+  <ol class="how"><li><b>Share your details</b><span>Mobile number, PAN and income details</span></li><li><b>Complete KYC</b><span>Aadhaar eKYC and a short video call</span></li><li><b>Get your offer and activate</b><span>See your limit, e-sign and activate your card</span></li></ol>
+  <div class="card"><div class="kv">
+    <div><span>Joining fee</span><b>${fmt(CFG.fee)} + GST</b></div><div><span>Annual fee</span><b>${fmt(CFG.fee)} + GST, waived on ${lakh(CFG.feeWaiver)} spend</b></div><div><span>Interest-free period</span><b>Up to 50 days</b></div></div></div>
+  <p class="disc">The ${CFG.brand} Credit Card is issued by ${CFG.issuer}. Approval, limit and benefits are at the bank's discretion and subject to its terms. ${CFG.brand} is a co-brand partner.</p>
+  <p class="powered">Powered by <span class="hf">hyperface</span></p>
+</div><div class="foot"><button class="btn" type="button" data-go="mobile">Apply now</button><p class="fine c">Takes about 5 minutes. Checking your offer doesn't affect your credit score.</p></div></div>`;
+M.landing = () => { const upd=()=>{ const b=+$('#cb1').value, o=+$('#cb2').value; $('#cv1').textContent=fmt(b); $('#cv2').textContent=fmt(o); $('#cout').textContent=fmt(12*(b*CFG.brandCashback+o*CFG.otherCashback)/100); };
+  $('#cb1').oninput=upd; $('#cb2').oninput=upd; upd(); };
+
+V.mobile = () => scr('mobile', `${head('mobile','Enter your mobile number','We’ll send a one-time code. Use the number linked to your Aadhaar.')}
+  ${field('f-mobile','Mobile number',D.mobile,{pre:'+91',mode:'numeric',k:'mobile'})}
+  <div class="consents">
+    <label class="chk" for="c1"><input type="checkbox" id="c1" checked><span>I agree to the <u>Terms</u> and <u>Privacy Policy</u>, and authorise ${CFG.issuer} to fetch my credit report from credit bureaus.</span></label>
+  </div>`, `<button class="btn" type="button" id="go">Get OTP</button>`);
+M.mobile = () => { $('#go').onclick = () => { if(!$('#c1').checked){ toast('Accept the terms to continue'); return; } load($('#go'),'Sending OTP'); later(700,()=>go('otp')); }; };
+
+V.otp = () => scr('otp', `${head('otp','Verify your number',`Enter the 6-digit code sent to <b>+91 ${D.mobile}</b>. <button class="link" type="button" data-back>Change</button>`)}
+  ${otpBoxes('o1')}<p class="hint" id="otph">${ic('phone',14)} Reading OTP from SMS…</p><p class="hint">Didn’t get it? <span id="rs"></span></p>`,
+  `<button class="btn" type="button" id="go" disabled>Verify</button>`);
+M.otp = () => { const o=wireOtp('o1',()=>$('#go').disabled=false); later(1100,()=>o.fill('482915',()=>{ $('#otph').innerHTML=`${ic('check',14)} OTP filled automatically`; })); countdown('#rs',28);
+  $('#go').onclick = () => { load($('#go'),'Verifying'); later(700,()=>go('pan')); }; };
+
+V.pan = () => scr('pan', `${head('pan','Verify your PAN','We use it to check your eligibility. Your details are encrypted.')}
+  ${field('f-pan','PAN',D.pan,{k:'pan',up:true})}
+  ${field('f-dob','Date of birth',D.dob,{k:'dob',hint:'DD/MM/YYYY, as printed on your PAN card'})}
+  <div id="res"></div>`, `<button class="btn" type="button" id="go">Verify PAN</button>`);
+M.pan = () => { let ok=false; $('#go').onclick = () => { if(ok) return go('personal'); load($('#go'),'Checking PAN');
+  later(1000,()=>{ ok=true; $('#res').innerHTML=vcard('Name as per PAN', D.name.toUpperCase()); unload($('#go'),'Continue'); }); }; };
+
+V.personal = () => scr('personal', `${head('personal','A few personal details','Your name is filled in from PAN.')}
+  ${field('f-name','Full name',D.name,{locked:true,suf:`<span class="suf">${ic('check',14)}PAN</span>`})}
+  ${field('f-email','Email address',D.email,{k:'email',mode:'email',hint:'Card statements are sent here'})}
+  <div class="fld"><span>Gender</span>${chips('gender',['Male','Female','Other'])}</div>
+  <div class="row2">${field('f-pin','Pincode',D.pincode,{k:'pincode',mode:'numeric'})}${field('f-city','City','Bengaluru',{locked:true})}</div>
+  ${field('f-addr','Current address',D.address,{k:'address'})}
+  <div class="fld"><span>This home is</span>${chips('res',['Owned','Rented','Family-owned'])}</div>`,
+  `<button class="btn" type="button" data-go="income">Continue</button>`);
+
+V.income = () => scr('income', `${head('income','Your work and income','This helps the bank decide your credit limit.')}
+  <div class="fld"><span>Employment type</span>${chips('emp',['Salaried','Self-employed','Business owner'])}</div>
+  ${field('f-co','Company name',D.company,{k:'company'})}
+  ${field('f-inc','Monthly take-home income',D.income,{k:'income',pre:'₹',mode:'numeric',hint:'After tax, as credited to your bank account'})}
+  <div id="aawrap"><button class="opt" type="button" id="aa"><span class="oi">${ic('bank')}</span><span class="ot"><b>Verify income instantly <span class="badge b">Optional</span></b><span>Share 6 months of bank statements via Account Aggregator. Often gets a higher limit.</span></span></button></div>`,
+  `<button class="btn" type="button" id="go">Continue to KYC</button>`);
+M.income = () => {
+  $('#aa').onclick = () => { $('#aa').disabled=true; $('#aa').querySelector('.ot span').textContent='Waiting for consent in the Account Aggregator app…';
+    later(1600,()=>{ $('#aawrap').innerHTML = vcard('Income verified via Account Aggregator', '₹86,400 average monthly credit'); }); };
+  $('#go').onclick = () => go('kyc');
+};
+
+V.fetching = () => scr('fetching', `<div class="center"><div class="ring"></div><div><h2 style="margin:0">Finding your best offer</h2><p class="lead" style="margin:6px 0 0">This takes a few seconds. Please don’t close the app.</p></div>
+  <ul class="steps"><li id="s1"><i>${ic('check',12)}</i>Checking your credit report</li><li id="s2"><i>${ic('check',12)}</i>Verifying your income</li><li id="s3"><i>${ic('check',12)}</i>Deciding your credit limit</li></ul></div>`);
+M.fetching = () => { later(800,()=>$('#s1').classList.add('done')); later(1600,()=>$('#s2').classList.add('done')); later(2400,()=>$('#s3').classList.add('done')); later(3000,()=>go('offer')); };
+
+V.offer = () => scr('offer', `<div class="offer-hero"><p class="eyebrow">Congratulations, ${D.name.split(' ')[0]}</p><p style="color:var(--muted)">You’re approved for the ${CFG.brand} Credit Card with a limit of</p><p class="big" id="lim">${fmt(D.limit)}</p><span class="badge a">Offer valid for 7 days</span></div>
+  ${ccard({name:D.cardName})}
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>Prefer a lower limit?</b><span class="fine">Optional</span></div>
+    <input type="range" id="rng" min="25000" max="${CFG.offer}" step="5000" value="${D.limit}" aria-label="Choose credit limit"><div class="rlab"><span>₹25,000</span><span>${fmt(CFG.offer)}</span></div></div>
+  <div class="card"><div class="kv">
+    <div><span>Joining fee</span><b>${fmt(CFG.fee)} + GST</b></div>
+    <div><span>Welcome benefit</span><b>${fmt(CFG.welcome)} ${CFG.brand} voucher</b></div>
+    <div><span>Annual fee</span><b>Waived on ${lakh(CFG.feeWaiver)} spend</b></div>
+    <div><span>Interest-free period</span><b>Up to 50 days</b></div>
+    <div><span>Issued by</span><b>${CFG.issuer}</b></div></div></div>`,
+  `<button class="btn" type="button" data-go="personalise">Accept offer</button><p class="fine c">Next: personalise your card</p>`);
+M.offer = () => { $('#rng').oninput = e => { D.limit=+e.target.value; $('#lim').textContent=fmt(D.limit); }; };
+
+V.personalise = () => scr('personalise', `${head('personalise','Personalise your card','You can change the statement date later in the app.')}
+  ${ccard({name:D.cardName, nameId:'pvname'})}
+  ${field('f-cn','Name on card',D.cardName,{k:'cardName',up:true,max:19,suf:`<span class="namelen" id="nl">${D.cardName.length}/19</span>`})}
+  <div class="fld"><span>Statement date</span>${chips('stmt',['1st','5th','15th','20th'])}<small>Payment is due 20 days after the statement date.</small></div>
+  <div class="fld"><span>Deliver my card to</span>${chips('deliver',['Home','Office'])}</div>`,
+  `<button class="btn" type="button" data-go="kfs">Continue</button>`);
+M.personalise = () => {
+  const nm=$('#f-cn'); nm.addEventListener('input',()=>{ const v=nm.value.toUpperCase(); D.cardName=v; $('#pvname').textContent=v||'Your name'; $('#nl').textContent=`${v.length}/19`; });
+};
+
+/* ----- KYC: overview → issuer-hosted Aadhaar eKYC → selfie → video KYC (now or scheduled) ----- */
+function redirect(msg, sub, cb){
+  const r=document.createElement('div'); r.className='redir';
+  r.innerHTML=`<div class="hosts"><span class="mark">${CFG.initials}</span><span class="dots"><i></i><i></i><i></i></span><span class="mark imark">${CFG.issuerInitials}</span></div><h3>${msg}</h3><p class="fine">${sub}</p>`;
+  app.appendChild(r); later(1500,()=>{ r.remove(); cb(); });
+}
+
+V.kyc = () => scr('kyc', `${head('kyc','Verify your identity','We verify your identity before deciding your credit limit. Both steps happen on '+CFG.issuer+'’s secure pages.')}
+  <div class="card" style="gap:0">
+    <div class="bl"><span class="bi">${ic('id',18)}</span><div style="flex:1"><b>1. Aadhaar eKYC</b><span>Verify with an OTP on your Aadhaar-linked mobile. About 2 minutes.</span></div></div>
+    <div class="bl"><span class="bi">${ic('video',18)}</span><div style="flex:1"><b>2. Video KYC</b><span>A 5-minute call with a bank officer, who also confirms it’s you. Do it now or book a slot.</span></div></div>
+  </div>
+  <div class="vcard" style="background:var(--iss-soft);border-color:#C6DFE2"><span class="vi" style="background:var(--iss)">${ic('lock',16)}</span><div style="flex:1;min-width:0"><p class="k">You’ll be taken to ${CFG.issuer}</p><p class="v" style="font-weight:500;font-size:13px">Your Aadhaar details go straight to the bank. ${CFG.brand} never sees them.</p></div></div>`,
+  `<button class="btn" type="button" id="go">Start Aadhaar eKYC</button>`);
+M.kyc = () => { $('#go').onclick = () => redirect(`Taking you to ${CFG.issuer}`, `${CFG.issuerHost}<br>You’ll come back to ${CFG.brand} automatically.`, ()=>go('ekyc')); };
+
+/* issuer-hosted page chrome */
+const iss = (body, foot) => `<div class="scr iss">
+  <div class="ichrome"><button class="iconbtn sm" type="button" data-back aria-label="Close and return">${ic('back',16)}</button><span class="url">${ic('lock',12)}${CFG.issuerHost}</span></div>
+  <div class="ihead"><span class="mark imark inv">${CFG.issuerInitials}</span><div><b>${CFG.issuer}</b><span>Aadhaar eKYC</span></div></div>
+  <div class="ibody">${body}</div><div class="foot">${foot}<p class="fine c">Secured by ${CFG.issuer} · UIDAI-authorised KYC</p></div></div>`;
+
+V.ekyc = () => iss(`<div id="ek">
+  <p class="istep">Step 1 of 2 · Aadhaar details</p><h2 style="margin:4px 0 6px">Verify with Aadhaar</h2><p class="lead" style="margin:0 0 16px">Applying for the ${CFG.brand} Credit Card as <b>${D.name}</b>.</p>
+  <div style="display:flex;flex-direction:column;gap:14px">
+  <div class="fld"><span>Verify using</span>${chips('aadType',['Aadhaar number','Virtual ID'])}</div>
+  ${field('f-aad','Aadhaar number','4321 8765 9012',{mode:'numeric'})}
+  <label class="chk" for="c3"><input type="checkbox" id="c3" checked><span>I authorise ${CFG.issuer} to fetch my demographic details and photo from UIDAI for KYC. My Aadhaar will not be stored in full.</span></label></div></div>`,
+  `<button class="btn ibtn" type="button" id="go">Send OTP</button>`);
+M.ekyc = () => { let phase=0;
+  window.optSync=null;
+  $('#go').onclick = () => {
+    if(phase===0){ if(!$('#c3').checked){ toast('Give consent to continue'); return; } load($('#go'),'Sending OTP'); later(800,()=>{ phase=1;
+      $('#ek').innerHTML=`<p class="istep">Step 2 of 2 · OTP</p><h2 style="margin:4px 0 6px">Enter the OTP from UIDAI</h2><p class="lead" style="margin:0 0 16px">Sent to the mobile number linked to Aadhaar ending ••9012.</p>${otpBoxes('o2')}<p class="hint" style="margin-top:12px">Didn’t get it? <span id="rs"></span></p>`;
+      const o=wireOtp('o2',()=>$('#go').disabled=false); unload($('#go'),'Verify'); $('#go').disabled=true; later(800,()=>o.fill('730164')); countdown('#rs',30); }); return; }
+    if(phase===1){ load($('#go'),'Verifying with UIDAI'); later(1100,()=>{ phase=2;
+      $('#ek').innerHTML=`${vcard('Aadhaar eKYC','Verified by UIDAI')}
+      <div class="card" style="margin-top:14px"><b>Details received</b><div class="aad"><div class="ph">${person}</div><div class="kv">
+      <div><span>Name</span><b>${D.name}</b></div><div><span>DOB</span><b>${D.dob}</b></div><div><span>Gender</span><b>${D.gender}</b></div></div></div>
+      <div class="kv"><div><span>Address</span><b style="max-width:60%">${D.address}, Bengaluru, Karnataka ${D.pincode}</b></div><div><span>Aadhaar</span><b>XXXX XXXX 9012</b></div><div><span>Name match with PAN</span><b style="color:var(--ok)">100%</b></div></div></div>`;
+      unload($('#go'),`Return to ${CFG.brand}`); }); return; }
+    redirect(`Returning to ${CFG.brand}`, 'Your KYC result has been shared securely.', ()=>go('vkyc'));
+  };
+};
+
+const vDays = () => { const out=[]; for(let i=0;i<5;i++){ const d=new Date(Date.now()+i*864e5); out.push(i===0?'Today':i===1?'Tomorrow':d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})); } return out; };
+const SLOTS = [['10:00 AM',0],['10:30 AM',1],['11:00 AM',0],['11:30 AM',0],['12:00 PM',1],['2:00 PM',0],['3:30 PM',0],['5:00 PM',1],['6:30 PM',0]];
+
+V.vkyc = () => { if(!D.vday) D.vday=vDays()[1];
+  return scr('vkyc', `${head('vkyc','Complete your video KYC',`A 5-minute call with a ${CFG.issuer} officer. Your credit limit is decided once it’s done. Available 9 AM to 9 PM, every day.`)}
+  <div class="opts">
+    ${opt('vmode','now','video','Start now','Officers available · about 2 min wait','Live')}
+    ${opt('vmode','schedule','clock','Book a slot','Pick a day and time that suits you')}
+  </div>
+  <div id="sched" style="display:flex;flex-direction:column;gap:16px">
+    <div class="fld"><span>Day</span>${chips('vday',vDays())}</div>
+    <div class="fld"><span>Time</span><div class="chips slots" data-key="vslot">${SLOTS.map(([t,full])=>`<button type="button" class="chip${D.vslot===t?' on':''}" data-val="${t}" ${full?'disabled aria-label="'+t+', full"':''}>${t}</button>`).join('')}</div><small>Struck-out slots are full.</small></div>
+  </div>
+  <div class="fld"><span>Call language</span>${chips('vlang',['English','Hindi','Kannada','Tamil','Telugu'])}</div>
+  <div class="card"><b>Keep these ready</b><ul class="next">
+    <li><i>${ic('check',18)}</i><span>Your original PAN card</span></li>
+    <li><i>${ic('check',18)}</i><span>A blank white paper and a pen to show your signature</span></li>
+    <li><i>${ic('check',18)}</i><span>A quiet, well-lit room and a stable internet connection</span></li>
+    <li><i>${ic('check',18)}</i><span>Be in India during the call, with location turned on</span></li></ul></div>`,
+  `<button class="btn" type="button" id="go">Start video KYC</button>`); };
+M.vkyc = () => {
+  const sync=()=>{ $('#sched').hidden = D.vmode!=='schedule'; $('#go').textContent = D.vmode==='schedule' ? 'Confirm slot' : 'Start video KYC'; };
+  window.optSync=sync; sync();
+  $('#go').onclick = () => {
+    if(D.vmode==='schedule'){
+      if(!D.vslot){ toast('Pick a time slot'); return; }
+      redirect(`Booking your slot with ${CFG.issuer}`, `${CFG.issuerHost}`, ()=>{
+        showSheet(`${vcard('Video KYC booked', `${D.vday}, ${D.vslot}`, 'Scheduled')}
+          <p class="lead" style="margin:0">Call in ${D.vlang}. We’ll send the link by SMS and email, with a reminder 15 minutes before. Your credit offer is shared right after the call.</p>
+          <button class="btn sec" type="button" id="cal">Add to calendar</button><button class="btn" type="button" id="sgo">See what happens after the call</button>`);
+        $('#cal').onclick=()=>toast('Added to your calendar'); $('#sgo').onclick=()=>go('fetching');
+      });
+    } else {
+      redirect(`Connecting to ${CFG.issuer} video KYC`, `${CFG.issuerHost}<br>Allow camera and microphone when asked.`, ()=>{
+        showSheet(`<h3>Video KYC with ${CFG.issuer}</h3><div class="timer" id="vt"><div class="ring"></div><div><b>Waiting for an officer</b><p class="fine">In the live journey the call runs on the bank’s page. The prototype skips ahead.</p></div></div><button class="btn sec" type="button" id="sgo" disabled>On call…</button>`);
+        later(2200,()=>{ $('#vt').outerHTML=vcard('Video KYC','Completed','Done'); $('#sgo').disabled=false; $('#sgo').className='btn'; $('#sgo').textContent='Continue'; $('#sgo').onclick=()=>go('fetching'); });
+      });
+    }
+  };
+};
+
+V.selfie = () => scr('selfie', `${head('selfie','Take a quick selfie','We match it with your Aadhaar photo to confirm it’s you.')}
+  <div class="vf" id="vf">${person}<span class="beam"></span></div>
+  <div id="sres" style="display:flex;flex-direction:column;gap:12px"><div class="tips"><div><i>${ic('sun',18)}</i>Find good light</div><div><i>${ic('glasses',18)}</i>Remove glasses or cap</div><div><i>${ic('face',18)}</i>Keep face in the circle</div></div></div>`,
+  `<button class="btn" type="button" id="go">Take selfie</button><p class="fine c">In this prototype the camera is simulated.</p>`);
+M.selfie = () => { let ok=false; $('#go').onclick = () => { if(ok) return go('vkyc'); load($('#go'),'Checking liveness'); $('#vf').classList.add('scan');
+  later(1900,()=>{ ok=true; $('#vf').classList.remove('scan'); $('#vf').classList.add('ok');
+    $('#sres').innerHTML = vcard('Liveness check','Passed') + vcard('Face match with Aadhaar photo','98% match','Matched'); unload($('#go'),'Continue'); }); }; };
+
+V.bank = () => scr('bank', `${head('bank','Verify your bank account','We confirm you hold an active savings account in your name.')}
+  <div id="bform" style="display:flex;flex-direction:column;gap:14px">
+  ${field('f-holder','Account holder',D.name.toUpperCase(),{locked:true})}
+  ${field('f-acct','Account number',D.acct,{k:'acct',mode:'numeric'})}
+  ${field('f-ifsc','IFSC',D.ifsc,{k:'ifsc',up:true,hint:'HDFC Bank · Indiranagar, Bengaluru'})}</div>
+  <div id="bres" style="display:flex;flex-direction:column;gap:12px"></div>`,
+  `<button class="btn" type="button" id="go">Verify account</button>`);
+M.bank = () => { let ok=false;
+  $('#go').onclick=()=>{ if(ok) return go('kfs'); load($('#go'),'Verifying'); $('#bres').innerHTML=`<div class="timer"><div class="ring"></div><div><b>Sending ₹1 to your account</b><p class="fine">This confirms the account is active and in your name.</p></div></div>`;
+    later(1800,()=>{ ok=true; $('#bform').hidden=true; const a=$('#f-acct').value;
+      $('#bres').innerHTML = vcard('HDFC Bank · ••'+a.slice(-4), 'Account verified') + `<div class="card"><div class="kv"><div><span>Name at bank</span><b>RAHUL SHARMA</b></div><div><span>Name match with PAN</span><b style="color:var(--ok)">100%</b></div><div><span>₹1 credited</span><b>Ref 3048 2291 7710</b></div></div></div>`;
+      unload($('#go'),'Continue'); }); };
+};
+
+V.kfs = () => scr('kfs', `${head('kfs','Sign your sanction letter and KFS','Review your card terms, then e-sign with Aadhaar OTP. Values shown are samples.')}
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>Sanction letter</b><span class="badge b">Sample</span></div><div class="kv">
+    <div><span>Card</span><b>${CFG.brand} Credit Card · ${CFG.variant}</b></div>
+    <div><span>Name on card</span><b>${D.cardName}</b></div>
+    <div><span>Credit limit</span><b>${fmt(D.limit)}</b></div>
+    <div><span>Cash withdrawal limit</span><b>${fmt(D.limit*0.2)}</b></div>
+    <div><span>Sanctioned on</span><b>${plus(0)}</b></div>
+    <div><span>Issued by</span><b>${CFG.issuer}</b></div></div></div>
+  <div class="card"><b>Key Fact Statement</b><div class="kv">
+    <div><span>Joining fee</span><b>${fmt(CFG.fee)} + GST</b></div>
+    <div><span>Annual fee</span><b>${fmt(CFG.fee)} + GST, waived on ${lakh(CFG.feeWaiver)} spend</b></div>
+    <div><span>Interest-free period</span><b>Up to 50 days</b></div>
+    <div><span>Interest on unpaid balance</span><b>3.6% / month (43.2% p.a.)</b></div>
+    <div><span>Cash withdrawal fee</span><b>2.5%, min ₹500</b></div>
+    <div><span>Late payment fee</span><b>₹100 – ₹1,300 by amount due</b></div>
+    <div><span>Foreign currency markup</span><b>3.5%</b></div>
+    <div><span>Card closure</span><b>Anytime, no charge</b></div>
+    <div><span>Grievance officer</span><b>grievance@partnerbank.in</b></div></div></div>
+  <div class="card" style="gap:0"><button class="docrow" type="button" data-doc>${ic('doc')}<span>Sanction letter (PDF)</span><em>View</em></button><button class="docrow" type="button" data-doc>${ic('doc')}<span>Key Fact Statement (PDF)</span><em>View</em></button><button class="docrow" type="button" data-doc>${ic('doc')}<span>MITC & cardholder agreement</span><em>View</em></button></div>
+  <label class="chk" for="c4"><input type="checkbox" id="c4" checked><span>I have read the sanction letter, Key Fact Statement and MITC, and agree to the cardholder agreement.</span></label>`,
+  `<button class="btn" type="button" id="go">E-sign with Aadhaar OTP</button>`);
+M.kfs = () => {
+  app.querySelectorAll('[data-doc]').forEach(b=>b.onclick=()=>toast('Opens the document in the live journey'));
+  $('#go').onclick = () => { if(!$('#c4').checked){ toast('Tick the box to agree before signing'); return; }
+    showSheet(`<h3>E-sign your documents</h3><p class="lead" style="margin:0">Enter the OTP sent to your Aadhaar-linked mobile ending ••3210 to sign the sanction letter and KFS.</p>${otpBoxes('o3')}<button class="btn" type="button" id="sgo" disabled>Sign documents</button>`);
+    const o=wireOtp('o3',()=>$('#sgo').disabled=false); later(700,()=>o.fill('561208'));
+    $('#sgo').onclick=()=>{ load($('#sgo'),'Signing'); later(1200,()=>go('activate')); };
+  };
+};
+
+const tg = (id, title, sub, on, locked) => `<label class="tg" for="${id}"><span><b>${title}</b><small>${sub}</small></span><input type="checkbox" role="switch" id="${id}" ${on?'checked':''} ${locked?'disabled':''}><i></i></label>`;
+V.activate = () => scr('activate', `<div id="act" style="display:flex;flex-direction:column;gap:18px">
+  ${head('activate','Activate your card','Your documents are signed. Choose how you’ll use the card, then confirm activation with an OTP.')}
+  ${vcard(CFG.signedLabel,'E-signed','Signed')}
+  ${ccard({name:D.cardName, num:'•••• •••• •••• 4821'})}
+  <div class="card"><div class="kv">
+    <div><span>Credit limit</span><b>${fmt(D.limit)}</b></div>
+    <div><span>Card</span><b>${CFG.brand} Credit Card · ${CFG.variant}</b></div>
+    <div><span>Issued by</span><b>${CFG.issuer}</b></div></div></div>
+  <div class="card" style="gap:2px"><b>How you’ll use the card</b><p class="fine" style="margin-bottom:4px">As per RBI rules, only in-store use in India is on by default. Turn on what you need. You can change this anytime.</p>
+    ${tg('u1','In-store in India','Swipe or insert with your PIN',true,true)}
+    ${tg('u2','Online payments',`Needed to shop on ${CFG.brand}`,false)}
+    ${tg('u3','Tap to pay','Contactless, up to ₹5,000 without a PIN',false)}
+    ${tg('u4','International use','Online and in-store outside India',false)}</div></div>`,
+  `<button class="btn" type="button" id="go">Activate card</button>`);
+M.activate = () => { let done=false; $('#go').onclick = () => {
+  if(done){ toast(`The customer returns to the ${CFG.brand} app`); return; }
+  const uses=[['u1','In-store in India'],['u2','Online payments'],['u3','Tap to pay'],['u4','International use']].filter(([id])=>$('#'+id).checked).map(x=>x[1]);
+  showSheet(`<h3>Confirm activation</h3><p class="lead" style="margin:0">Enter the OTP sent to +91 ${D.mobile} to activate your card.</p>${otpBoxes('o4')}<button class="btn" type="button" id="sgo" disabled>Activate</button>`);
+  const o=wireOtp('o4',()=>$('#sgo').disabled=false); later(700,()=>o.fill('208416'));
+  $('#sgo').onclick = () => { load($('#sgo'),'Activating your card'); later(1300,()=>{ hideSheet(); done=true;
+    $('#act').innerHTML = `<div class="center" style="flex:none;padding-top:8px;gap:14px"><span class="done-badge">${ic('check',44)}</span><div><h2 style="margin:0">Your card is active</h2><p class="lead" style="margin:6px 0 0">You’re all set, ${D.name.split(' ')[0]}.</p></div></div>
+      ${ccard({name:D.cardName, num:'•••• •••• •••• 4821'})}
+      <div class="card"><div class="kv">
+        <div><span>Available limit</span><b>${fmt(D.limit)}</b></div>
+        <div><span>Card ending</span><b>4821</b></div>
+        <div><span>Activated on</span><b>${plus(0)}</b></div>
+        <div><span>Turned on</span><b>${uses.join(', ')}</b></div></div></div>
+      <p class="powered">Powered by <span class="hf">hyperface</span></p>`;
+    app.querySelector('.foot').innerHTML = `<button class="btn" type="button" id="go2">Back to ${CFG.brand}</button><button class="btn sec" type="button" data-go="landing">Restart demo</button>`;
+    $('#go2').onclick = () => toast(`The customer returns to the ${CFG.brand} app`);
+    app.querySelectorAll('.prog i').forEach(i=>i.className='done');
+  }); };
+}; };
+
+/* ===== router ===== */
+function go(id){
+  if(!V[id]) id='landing';
+  runId++; cur=id; window.optSync=null; app.innerHTML=V[id](); (M[id]||(()=>{}))(); renderNav();
+  try{ history.replaceState(null,'','#'+id); }catch(e){}
+}
+function back(){ let i=FLOW.findIndex(x=>x.id===cur)-1; if(i>=0 && FLOW[i].id==='fetching') i--; go(FLOW[Math.max(0,i)].id); }
+
+app.addEventListener('click', e => {
+  const g=e.target.closest('[data-go]'); if(g){ go(g.dataset.go); return; }
+  if(e.target.closest('[data-back]')){ back(); return; }
+  const c=e.target.closest('.chip'); if(c){ const p=c.parentElement; D[p.dataset.key]=c.dataset.val; p.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); return; }
+  const o=e.target.closest('[data-opt]'); if(o){ D[o.dataset.opt]=o.dataset.val; app.querySelectorAll(`[data-opt="${o.dataset.opt}"]`).forEach(x=>x.classList.toggle('on',x===o)); if(window.optSync) window.optSync(); }
+});
+app.addEventListener('input', e => { const k=e.target.dataset && e.target.dataset.k; if(k) D[k]=e.target.value; });
+
+function renderNav(){
+  if(!$('#nav')) return;
+  const ci=FLOW.findIndex(x=>x.id===cur); const groups=[...new Set(FLOW.map(f=>f.g))];
+  $('#nav').innerHTML = groups.map(g=>`<div class="ng"><p>${g}</p>${FLOW.map((f,i)=>f.g!==g?'':`<button type="button" data-jump="${f.id}" class="${i===ci?'on':i<ci?'past':''}"><span class="n">${String(i+1).padStart(2,'0')}</span>${f.label}</button>`).join('')}</div>`).join('');
+  $('#note').textContent = FLOW[ci].note;
+}
+$('#nav')?.addEventListener('click', e => { const b=e.target.closest('[data-jump]'); if(b) go(b.dataset.jump); });
+if($('#restart')) $('#restart').onclick = () => go('landing');
+
+const h=(location.hash||'').slice(1);
+go(FLOW.some(f=>f.id===h)?h:'landing');
+</script>
+
+</body>
+</html>
